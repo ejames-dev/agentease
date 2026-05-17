@@ -9,6 +9,7 @@ The first MVP is a Python SDK with one focused workflow: support-ticket triage. 
 - Support triage template for customer tickets
 - Local PII masking for email, phone, credit card, and SSN-like values
 - Strict Pydantic validation for LLM responses
+- JSON repair retry when a model returns malformed output
 - LiteLLM-backed provider calls
 - Environment-based provider configuration
 - Local metrics for duration, success state, and detected PII types
@@ -66,6 +67,13 @@ result = client.triage.run(
 print(result.model_dump_json(indent=2))
 ```
 
+By default, AgentEase makes one repair attempt if the model response is not valid JSON or does not match the schema. You can tune this from the top-level client:
+
+```python
+client = AgentEase.from_env()
+client.triage.max_repair_attempts = 2
+```
+
 Example result:
 
 ```json
@@ -107,7 +115,7 @@ AgentEase uses a sandwich model around each LLM call:
 
 1. Pre-execution guardrail: raw input is scrubbed locally before model calls.
 2. LLM execution: only sanitized text is sent to the configured provider.
-3. Post-execution guardrail: output is rejected unless it matches the schema.
+3. Post-execution guardrail: output is repaired if needed, then rejected unless it matches the schema.
 
 The hosted control plane described in the product roadmap is not part of this MVP. The current SDK does not send telemetry to AgentEase servers.
 
@@ -134,7 +142,7 @@ tests/
 ## Roadmap
 
 - Harden PII detection and add Presidio-backed detection
-- Add retry and repair flow for invalid model JSON
+- Add streaming and richer provider controls
 - Add Node SDK after the Python API stabilizes
 - Add safe dashboard telemetry and policy configuration
 - Add templates for lead qualification and internal document analysis

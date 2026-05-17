@@ -18,6 +18,7 @@ class AgentEase:
     config: AgentEaseConfig | None = None
     pii_scrubber: PiiScrubber | None = None
     metrics: MetricsRecorder | None = None
+    max_repair_attempts: int = 1
 
     def __post_init__(self) -> None:
         config = self.config or AgentEaseConfig(
@@ -31,6 +32,7 @@ class AgentEase:
             config=config,
             pii_scrubber=self.pii_scrubber,
             metrics=self.metrics,
+            max_repair_attempts=self.max_repair_attempts,
         )
 
     @classmethod
