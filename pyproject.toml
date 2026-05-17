@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentease"
+version = "0.1.0"
+description = "Secure agent SDK for B2B teams."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "litellm>=1.83.14",
+    "pydantic>=2.0",
+    "python-dotenv>=1.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["agentease"]
