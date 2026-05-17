@@ -7,7 +7,7 @@ The first MVP is a Python SDK with one focused workflow: support-ticket triage. 
 ## What Works Today
 
 - Support triage template for customer tickets
-- Local PII masking for email, phone, credit card, and SSN-like values
+- Local PII masking for email, phone, credit card, SSN-like values, and custom entities
 - Strict Pydantic validation for LLM responses
 - JSON repair retry when a model returns malformed output
 - LiteLLM-backed provider calls
@@ -134,6 +134,22 @@ AgentEase uses a sandwich model around each LLM call:
 3. Post-execution guardrail: output is repaired if needed, then rejected unless it matches the schema.
 
 The hosted control plane described in the product roadmap is not part of this MVP. The current SDK does not send telemetry to AgentEase servers.
+
+## Custom PII Rules
+
+The default scrubber handles common entities and validates card-like numbers with a Luhn check to reduce false positives. Teams can add their own regex patterns or literal terms for customer-specific data.
+
+```python
+from agentease import AgentEase
+from agentease.guardrails import PiiScrubber
+
+scrubber = PiiScrubber(
+    extra_patterns={"account_id": r"\bacct_[A-Za-z0-9]+\b"},
+    custom_entities={"internal_project": ["Project Atlas"]},
+)
+
+client = AgentEase.offline(pii_scrubber=scrubber)
+```
 
 ## Project Structure
 

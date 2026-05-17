@@ -27,3 +27,13 @@ def test_agentease_offline_runs_without_provider_key(monkeypatch) -> None:
     assert result.priority == "high"
     assert client.metrics.events[0].success is True
     assert client.metrics.events[0].metadata["detected_pii"] == ["credit_card", "email"]
+
+
+def test_agentease_offline_accepts_custom_scrubber() -> None:
+    client = AgentEase.offline(
+        pii_scrubber=PiiScrubber(custom_entities={"project": ["Project Atlas"]})
+    )
+
+    result = client.triage.pii_scrubber.scrub("Project Atlas needs review.")
+
+    assert result.sanitized_text == "[REDACTED_PROJECT] needs review."

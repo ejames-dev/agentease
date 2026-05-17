@@ -44,8 +44,14 @@ class AgentEase:
         return cls(config=AgentEaseConfig.from_env())
 
     @classmethod
-    def offline(cls) -> "AgentEase":
+    def offline(
+        cls,
+        pii_scrubber: PiiScrubber | None = None,
+        metrics: MetricsRecorder | None = None,
+    ) -> "AgentEase":
         return cls(
             config=AgentEaseConfig(provider="offline", model="offline-triage"),
+            pii_scrubber=pii_scrubber,
+            metrics=metrics,
             triage_llm_client=OfflineTriageLlmClient(),
         )
