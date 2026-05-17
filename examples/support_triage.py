@@ -1,12 +1,25 @@
+import argparse
+
 from dotenv import load_dotenv
 
 from agentease import AgentEase
 
 
 def main() -> None:
-    load_dotenv()
+    parser = argparse.ArgumentParser(description="Run the AgentEase support triage demo.")
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Use the configured live LLM provider instead of the offline demo client.",
+    )
+    args = parser.parse_args()
 
-    client = AgentEase.from_env()
+    if args.live:
+        load_dotenv()
+        client = AgentEase.from_env()
+    else:
+        client = AgentEase.offline()
+
     result = client.triage.run(
         "Customer jane@example.com says card 4242 4242 4242 4242 was charged twice."
     )

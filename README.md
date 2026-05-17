@@ -12,6 +12,7 @@ The first MVP is a Python SDK with one focused workflow: support-ticket triage. 
 - JSON repair retry when a model returns malformed output
 - LiteLLM-backed provider calls
 - Environment-based provider configuration
+- Offline demo mode with no API key required
 - Local metrics for duration, success state, and detected PII types
 - Unit tests and GitHub Actions CI
 
@@ -29,6 +30,12 @@ Run the test suite:
 uv run pytest
 ```
 
+Run the offline demo without an API key:
+
+```bash
+uv run python examples/support_triage.py
+```
+
 Configure a provider:
 
 ```bash
@@ -43,10 +50,10 @@ AGENTEASE_MODEL=gpt-4o-mini
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-Run the live triage example:
+Run the same demo against a live provider:
 
 ```bash
-uv run python examples/support_triage.py
+uv run python examples/support_triage.py --live
 ```
 
 ## SDK Usage
@@ -65,6 +72,15 @@ result = client.triage.run(
 )
 
 print(result.model_dump_json(indent=2))
+```
+
+For local demos or docs, use the deterministic offline client:
+
+```python
+from agentease import AgentEase
+
+client = AgentEase.offline()
+result = client.triage.run("Customer says they were charged twice.")
 ```
 
 By default, AgentEase makes one repair attempt if the model response is not valid JSON or does not match the schema. You can tune this from the top-level client:
@@ -125,6 +141,7 @@ The hosted control plane described in the product roadmap is not part of this MV
 agentease/
   client.py
   config.py
+  offline.py
   guardrails/
     pii_scrubber.py
     json_enforcer.py
