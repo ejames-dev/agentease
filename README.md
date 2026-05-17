@@ -36,6 +36,12 @@ Run the offline demo without an API key:
 uv run python examples/support_triage.py
 ```
 
+Run the JSONL batch integration example:
+
+```bash
+uv run python examples/batch_triage_jsonl.py
+```
+
 Configure a provider:
 
 ```bash
@@ -135,6 +141,30 @@ AgentEase uses a sandwich model around each LLM call:
 
 The hosted control plane described in the product roadmap is not part of this MVP. The current SDK does not send telemetry to AgentEase servers.
 
+## Integration Example
+
+The repo includes a file-based batch integration for teams that already export support tickets from a helpdesk, CRM, or internal queue.
+
+Input file:
+
+```json
+{"id":"ticket-1001","text":"Customer jane@example.com says card 4242 4242 4242 4242 was charged twice and wants a refund."}
+```
+
+Run offline:
+
+```bash
+uv run python examples/batch_triage_jsonl.py
+```
+
+Run with a live provider:
+
+```bash
+uv run python examples/batch_triage_jsonl.py --live
+```
+
+Each output line is JSON with the ticket id, category, priority, summary, suggested reply, detected PII types, and repair attempt count.
+
 ## Custom PII Rules
 
 The default scrubber handles common entities and validates card-like numbers with a Luhn check to reduce false positives. Teams can add their own regex patterns or literal terms for customer-specific data.
@@ -167,6 +197,9 @@ agentease/
     metrics.py
 examples/
   support_triage.py
+  batch_triage_jsonl.py
+  data/
+    support_tickets.jsonl
 tests/
 .github/workflows/
   ci.yml
