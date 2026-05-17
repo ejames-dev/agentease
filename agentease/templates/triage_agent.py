@@ -5,6 +5,7 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agentease.config import AgentEaseConfig
 from agentease.guardrails.json_enforcer import enforce_json_schema
 from agentease.guardrails.pii_scrubber import PiiScrubber, ScrubResult
 from agentease.telemetry.metrics import MetricEvent, MetricsRecorder, now_ms
@@ -25,18 +26,16 @@ class LlmClient(Protocol):
 
 
 class LiteLlmClient:
-    def __init__(self, api_key: str | None, provider: str, model: str) -> None:
-        self.api_key = api_key
-        self.provider = provider
-        self.model = model
+    def __init__(self, config: AgentEaseConfig) -> None:
+        self.config = config
 
     def complete(self, prompt: str) -> str:
         import litellm
 
         response = litellm.completion(
-            model=f"{self.provider}/{self.model}" if "/" not in self.model else self.model,
+            model=self.config.litellm_model,
             messages=[{"role": "user", "content": prompt}],
-            api_key=self.api_key,
+            api_key=self.config.api_key,
             temperature=0,
         )
         return str(response.choices[0].message.content)
@@ -48,13 +47,19 @@ class TriageAgent:
         api_key: str | None = None,
         provider: str = "openai",
         model: str = "gpt-4o-mini",
+        config: AgentEaseConfig | None = None,
         pii_scrubber: PiiScrubber | None = None,
         metrics: MetricsRecorder | None = None,
         llm_client: LlmClient | None = None,
     ) -> None:
+        self.config = config or AgentEaseConfig(
+            api_key=api_key,
+            provider=provider,
+            model=model,
+        )
         self.pii_scrubber = pii_scrubber or PiiScrubber()
         self.metrics = metrics
-        self.llm_client = llm_client or LiteLlmClient(api_key, provider, model)
+        self.llm_client = llm_client or LiteLlmClient(self.config)
 
     def run(self, ticket_text: str) -> TriageResult:
         started = now_ms()

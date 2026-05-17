@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Secure agent SDK for B2B teams."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
 dependencies = [
     "litellm>=1.83.14",
     "pydantic>=2.0",

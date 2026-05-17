@@ -1,10 +1,18 @@
+from dotenv import load_dotenv
+
 from agentease import AgentEase
 
 
-client = AgentEase(api_key="your-provider-api-key", provider="openai", model="gpt-4o-mini")
+def main() -> None:
+    load_dotenv()
 
-result = client.triage.run(
-    "Customer jane@example.com says they were charged twice and wants a refund."
-)
+    client = AgentEase.from_env()
+    result = client.triage.run(
+        "Customer jane@example.com says card 4242 4242 4242 4242 was charged twice."
+    )
 
-print(result.model_dump())
+    print(result.model_dump_json(indent=2))
+
+
+if __name__ == "__main__":
+    main()

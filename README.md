@@ -1,34 +1,72 @@
 # AgentEase
 
-AgentEase is a secure agent SDK for B2B teams that want to automate workflows with LLMs without exposing sensitive customer or company data.
+AgentEase is a secure agent SDK for B2B teams that want to automate LLM workflows without exposing sensitive customer or company data.
 
-The MVP is a Python SDK with a production-oriented support triage workflow:
+The first MVP is a Python SDK with one focused workflow: support-ticket triage. Raw ticket text is handled inside the customer's environment, sensitive values are masked locally, the sanitized prompt is sent to the configured LLM provider, and the response is validated into a strict typed result.
 
-- Local PII detection and masking before any LLM call
-- Controlled prompt construction
-- Strict Pydantic validation for structured outputs
-- Safe local metrics for latency, success state, and scrubbed entity types
-- A testable provider interface so development does not require live model calls
+## What Works Today
 
-## MVP Workflow
+- Support triage template for customer tickets
+- Local PII masking for email, phone, credit card, and SSN-like values
+- Strict Pydantic validation for LLM responses
+- LiteLLM-backed provider calls
+- Environment-based provider configuration
+- Local metrics for duration, success state, and detected PII types
+- Unit tests and GitHub Actions CI
 
-The first template is `Support Triage Agent`. It accepts raw support-ticket text inside the client's environment, scrubs sensitive data locally, sends sanitized content to the configured LLM provider, and returns a typed result.
+## Quick Start
 
-```python
-from agentease import AgentEase
+Install dependencies:
 
-client = AgentEase(api_key="your-provider-api-key", provider="openai", model="gpt-4o-mini")
-
-result = client.triage.run(
-    "Customer jane@example.com says they were charged twice and wants a refund."
-)
-
-print(result.category)
-print(result.priority)
-print(result.suggested_reply)
+```bash
+uv sync --dev
 ```
 
-Example output:
+Run the test suite:
+
+```bash
+uv run pytest
+```
+
+Configure a provider:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+```bash
+AGENTEASE_PROVIDER=openai
+AGENTEASE_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+Run the live triage example:
+
+```bash
+uv run python examples/support_triage.py
+```
+
+## SDK Usage
+
+```python
+from dotenv import load_dotenv
+
+from agentease import AgentEase
+
+load_dotenv()
+
+client = AgentEase.from_env()
+
+result = client.triage.run(
+    "Customer jane@example.com says card 4242 4242 4242 4242 was charged twice."
+)
+
+print(result.model_dump_json(indent=2))
+```
+
+Example result:
 
 ```json
 {
@@ -39,23 +77,46 @@ Example output:
 }
 ```
 
-## Install
+## Provider Configuration
+
+AgentEase reads configuration from `AgentEase.from_env()`:
 
 ```bash
-uv sync
+AGENTEASE_PROVIDER=openai
+AGENTEASE_MODEL=gpt-4o-mini
+AGENTEASE_API_KEY=
 ```
 
-## Run Tests
+If `AGENTEASE_API_KEY` is empty, AgentEase falls back to the provider-specific key name, such as `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
 
-```bash
-uv run pytest
+You can also configure the SDK directly:
+
+```python
+from agentease import AgentEase
+
+client = AgentEase(
+    api_key="your-provider-api-key",
+    provider="openai",
+    model="gpt-4o-mini",
+)
 ```
+
+## Security Model
+
+AgentEase uses a sandwich model around each LLM call:
+
+1. Pre-execution guardrail: raw input is scrubbed locally before model calls.
+2. LLM execution: only sanitized text is sent to the configured provider.
+3. Post-execution guardrail: output is rejected unless it matches the schema.
+
+The hosted control plane described in the product roadmap is not part of this MVP. The current SDK does not send telemetry to AgentEase servers.
 
 ## Project Structure
 
 ```text
 agentease/
   client.py
+  config.py
   guardrails/
     pii_scrubber.py
     json_enforcer.py
@@ -66,15 +127,19 @@ agentease/
 examples/
   support_triage.py
 tests/
+.github/workflows/
+  ci.yml
 ```
 
 ## Roadmap
 
-- Python SDK MVP
-- Support Triage template
-- Local PII scrubbing
-- Schema-validated outputs
-- Local metrics
-- Hosted control plane for safe telemetry and configuration
-- Additional templates for lead qualification and internal document analysis
-- Enterprise policy controls and audit logging
+- Harden PII detection and add Presidio-backed detection
+- Add retry and repair flow for invalid model JSON
+- Add Node SDK after the Python API stabilizes
+- Add safe dashboard telemetry and policy configuration
+- Add templates for lead qualification and internal document analysis
+- Add enterprise audit logs, policy versioning, and private deployments
+
+## License
+
+MIT
