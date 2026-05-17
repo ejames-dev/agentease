@@ -21,8 +21,7 @@ class TriageResult(BaseModel):
 
 
 class LlmClient(Protocol):
-    def complete(self, prompt: str) -> str:
-        ...
+    def complete(self, prompt: str) -> str: ...
 
 
 class LiteLlmClient:

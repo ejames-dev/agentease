@@ -40,7 +40,7 @@ class AgentEase:
         )
 
     @classmethod
-    def from_env(cls) -> "AgentEase":
+    def from_env(cls) -> AgentEase:
         return cls(config=AgentEaseConfig.from_env())
 
     @classmethod
@@ -48,7 +48,7 @@ class AgentEase:
         cls,
         pii_scrubber: PiiScrubber | None = None,
         metrics: MetricsRecorder | None = None,
-    ) -> "AgentEase":
+    ) -> AgentEase:
         return cls(
             config=AgentEaseConfig(provider="offline", model="offline-triage"),
             pii_scrubber=pii_scrubber,

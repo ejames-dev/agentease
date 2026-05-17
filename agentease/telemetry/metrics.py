@@ -14,8 +14,7 @@ class MetricEvent:
 
 
 class MetricsRecorder(Protocol):
-    def record(self, event: MetricEvent) -> None:
-        ...
+    def record(self, event: MetricEvent) -> None: ...
 
 
 class InMemoryMetrics:

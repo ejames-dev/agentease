@@ -4,7 +4,6 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-
 Validator = Callable[[str], bool]
 
 
@@ -88,7 +87,11 @@ class PiiScrubber:
         for entity_pattern in self._patterns:
             seen: list[str] = []
 
-            def replace(match: re.Match[str]) -> str:
+            def replace(
+                match: re.Match[str],
+                entity_pattern: EntityPattern = entity_pattern,
+                seen: list[str] = seen,
+            ) -> str:
                 value = match.group(0)
                 if entity_pattern.validator and not entity_pattern.validator(value):
                     return value

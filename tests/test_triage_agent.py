@@ -1,4 +1,7 @@
+from json import JSONDecodeError
+
 import pytest
+from pydantic import ValidationError
 
 from agentease.guardrails import PiiScrubber
 from agentease.telemetry import InMemoryMetrics
@@ -97,7 +100,7 @@ def test_triage_agent_records_failed_repair_attempts() -> None:
         max_repair_attempts=1,
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises((JSONDecodeError, ValidationError)):
         agent.run("Jane at jane@example.com was charged twice.")
 
     assert len(llm.prompts) == 2

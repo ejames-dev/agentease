@@ -11,12 +11,10 @@ class AgentEaseConfig:
     api_key: str | None = None
 
     @classmethod
-    def from_env(cls) -> "AgentEaseConfig":
+    def from_env(cls) -> AgentEaseConfig:
         provider = os.getenv("AGENTEASE_PROVIDER", "openai")
         model = os.getenv("AGENTEASE_MODEL", "gpt-4o-mini")
-        api_key = os.getenv("AGENTEASE_API_KEY") or os.getenv(
-            _provider_api_key_name(provider), ""
-        )
+        api_key = os.getenv("AGENTEASE_API_KEY") or os.getenv(_provider_api_key_name(provider), "")
         return cls(provider=provider, model=model, api_key=api_key or None)
 
     @property
