@@ -4,9 +4,8 @@ __pycache__/
 *$py.class
 .venv/
 .env
-
-# Streamlit
-.streamlit/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Project specific
-
