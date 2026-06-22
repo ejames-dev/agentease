@@ -216,7 +216,7 @@ tests/
 
 ## Changelog
 
-Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The current release is 0.1.0.
+Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The current release is 0.1.1.
 
 ## License
 
