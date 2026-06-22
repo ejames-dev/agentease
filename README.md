@@ -214,6 +214,10 @@ tests/
 - Add templates for lead qualification and internal document analysis
 - Add enterprise audit logs, policy versioning, and private deployments
 
+## Changelog
+
+Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The current release is 0.1.0.
+
 ## License
 
 MIT
