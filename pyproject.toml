@@ -7,7 +7,7 @@ name = "agentease"
 dynamic = ["version"]
 description = "Secure agent SDK for B2B teams."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 license = "MIT"
 authors = [{ name = "Evan Newman", email = "newmanevan@myyahoo.com" }]
 keywords = ["llm", "agent", "pii", "triage", "sdk", "security"]
