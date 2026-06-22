@@ -4,16 +4,31 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentease"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Secure agent SDK for B2B teams."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+authors = [{ name = "Evan Newman", email = "newmanevan@myyahoo.com" }]
+keywords = ["llm", "agent", "pii", "triage", "sdk", "security"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "litellm>=1.83.14",
     "pydantic>=2.0",
     "python-dotenv>=1.2.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ejames-dev/agentease"
+Repository = "https://github.com/ejames-dev/agentease"
+Issues = "https://github.com/ejames-dev/agentease/issues"
 
 [dependency-groups]
 dev = [
@@ -30,6 +45,9 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.hatch.version]
+path = "agentease/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agentease"]
