@@ -1,37 +1,12 @@
 from json import JSONDecodeError
 
 import pytest
+from _fakes import FakeLlmClient, SequentialLlmClient
 from pydantic import ValidationError
 
 from agentease.guardrails import PiiScrubber
 from agentease.telemetry import InMemoryMetrics
 from agentease.templates import TriageAgent
-
-
-class FakeLlmClient:
-    def __init__(self) -> None:
-        self.prompt = ""
-
-    def complete(self, prompt: str) -> str:
-        self.prompt = prompt
-        return """
-        {
-          "category": "billing",
-          "priority": "high",
-          "summary": "Customer reports a duplicate charge.",
-          "suggested_reply": "Thanks for reaching out. We are reviewing the charge."
-        }
-        """
-
-
-class SequentialLlmClient:
-    def __init__(self, responses: list[str]) -> None:
-        self.prompts: list[str] = []
-        self._responses = responses
-
-    def complete(self, prompt: str) -> str:
-        self.prompts.append(prompt)
-        return self._responses.pop(0)
 
 
 def test_triage_agent_scrubs_before_llm_and_returns_typed_result() -> None:
