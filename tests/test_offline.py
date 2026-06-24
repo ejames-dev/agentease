@@ -29,6 +29,22 @@ def test_agentease_offline_runs_without_provider_key(monkeypatch) -> None:
     assert client.metrics.events[0].metadata["detected_pii"] == ["credit_card", "email"]
 
 
+def test_agentease_offline_runs_lead_and_doc_workflows(monkeypatch) -> None:
+    monkeypatch.delenv("AGENTEASE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    client = AgentEase.offline()
+
+    lead = client.leads.run("Acme Corp wants a demo for 1000 seats, budget approved.")
+    doc = client.docs.run("Master services agreement with jane@example.com, net-30 terms.")
+
+    assert lead.next_action == "book_demo"
+    assert doc.doc_type == "contract"
+    assert doc.contains_pii is True
+    names = {event.name for event in client.metrics.events}
+    assert {"lead_qualification.run", "doc_classification.run"} <= names
+
+
 def test_agentease_offline_accepts_custom_scrubber() -> None:
     client = AgentEase.offline(
         pii_scrubber=PiiScrubber(custom_entities={"project": ["Project Atlas"]})
