@@ -73,8 +73,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Configure this environment with required reviewers, prevent self-review,
-    # and a TestPyPI Trusted Publisher for this workflow before first use.
+    # This repository has one maintainer, so the environment requires approval
+    # from ejames-dev while allowing self-review. Configure the matching
+    # TestPyPI Trusted Publisher before first use.
     environment:
       name: testpypi
       url: https://test.pypi.org/p/agentease

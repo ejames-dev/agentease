@@ -132,8 +132,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Configure this environment with required reviewers, prevent self-review,
-    # and a PyPI Trusted Publisher for this workflow before the first release.
+    # This repository has one maintainer, so the environment requires approval
+    # from ejames-dev while allowing self-review. Configure the matching PyPI
+    # Trusted Publisher before the first release.
     environment:
       name: pypi
       url: https://pypi.org/p/agentease
