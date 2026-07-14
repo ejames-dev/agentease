@@ -46,8 +46,8 @@ def triage_jsonl(path: Path, client: AgentEase) -> list[dict[str, Any]]:
         ticket = json.loads(line)
         ticket_id = ticket.get("id") or f"line-{line_number}"
         ticket_text = ticket["text"]
-        result = client.triage.run(ticket_text)
-        metrics = client.metrics.events[-1]
+        run = client.triage.run_with_report(ticket_text)
+        result = run.output
 
         outputs.append(
             {
@@ -56,8 +56,8 @@ def triage_jsonl(path: Path, client: AgentEase) -> list[dict[str, Any]]:
                 "priority": result.priority,
                 "summary": result.summary,
                 "suggested_reply": result.suggested_reply,
-                "detected_pii": metrics.metadata["detected_pii"],
-                "repair_attempts": metrics.metadata["repair_attempts"],
+                "detected_pii": list(run.guardrails.detected_pii_types),
+                "repair_attempts": run.guardrails.repair_attempts,
             }
         )
 

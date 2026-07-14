@@ -10,7 +10,7 @@ from agentease.templates.base import LlmClient, WorkflowAgent
 from agentease.templates.doc_classification_agent import (
     DOC_SPEC,
     DocClassificationAgent,
-    DocClassificationResult,
+    DocumentClassificationResult,
 )
 from agentease.templates.lead_qualification_agent import (
     LEAD_SPEC,
@@ -27,27 +27,38 @@ class AgentEase:
     api_key: str | None = None
     provider: str = "openai"
     model: str = "gpt-4o-mini"
+    timeout: float = 30
+    max_tokens: int = 800
     config: AgentEaseConfig | None = None
     pii_scrubber: PiiScrubber | None = None
     metrics: MetricsRecorder | None = None
+    llm_client: LlmClient | None = None
     triage_llm_client: LlmClient | None = None
     max_repair_attempts: int = 1
     offline_mode: bool = False
     triage: TriageAgent = field(init=False)
+    lead_qualification: LeadQualificationAgent = field(init=False)
+    document_classification: DocClassificationAgent = field(init=False)
     leads: WorkflowAgent[LeadQualificationResult] = field(init=False)
-    docs: WorkflowAgent[DocClassificationResult] = field(init=False)
+    docs: WorkflowAgent[DocumentClassificationResult] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.config = self.config or AgentEaseConfig(
-            api_key=self.api_key,
-            provider=self.provider,
-            model=self.model,
-        )
-        self.pii_scrubber = self.pii_scrubber or PiiScrubber()
-        self.metrics = self.metrics or InMemoryMetrics()
+        if self.config is None:
+            self.config = AgentEaseConfig(
+                api_key=self.api_key,
+                provider=self.provider,
+                model=self.model,
+                timeout=self.timeout,
+                max_tokens=self.max_tokens,
+            )
+        self.pii_scrubber = self.pii_scrubber if self.pii_scrubber is not None else PiiScrubber()
+        self.metrics = self.metrics if self.metrics is not None else InMemoryMetrics()
         self.triage = self._build(TriageAgent, TRIAGE_SPEC.name, self.triage_llm_client)
-        self.leads = self._build(LeadQualificationAgent, LEAD_SPEC.name)
-        self.docs = self._build(DocClassificationAgent, DOC_SPEC.name)
+        self.lead_qualification = self._build(LeadQualificationAgent, LEAD_SPEC.name)
+        self.document_classification = self._build(DocClassificationAgent, DOC_SPEC.name)
+        # Compatibility aliases retained through the 0.3 release line.
+        self.leads = self.lead_qualification
+        self.docs = self.document_classification
 
     def _build(
         self,
@@ -55,7 +66,14 @@ class AgentEase:
         spec_name: str,
         override: LlmClient | None = None,
     ) -> WorkflowAgent:
-        llm = override or (offline_client_for(spec_name) if self.offline_mode else None)
+        if override is not None:
+            llm = override
+        elif self.llm_client is not None:
+            llm = self.llm_client
+        elif self.offline_mode:
+            llm = offline_client_for(spec_name)
+        else:
+            llm = None
         return agent_cls(
             config=self.config,
             pii_scrubber=self.pii_scrubber,

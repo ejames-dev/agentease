@@ -1,9 +1,7 @@
-from json import JSONDecodeError
-
 import pytest
 from _fakes import FakeLlmClient, SequentialLlmClient
-from pydantic import ValidationError
 
+from agentease import InputValidationError, OutputValidationError
 from agentease.guardrails import PiiScrubber
 from agentease.telemetry import InMemoryMetrics
 from agentease.templates import TriageAgent
@@ -75,9 +73,24 @@ def test_triage_agent_records_failed_repair_attempts() -> None:
         max_repair_attempts=1,
     )
 
-    with pytest.raises((JSONDecodeError, ValidationError)):
+    with pytest.raises(OutputValidationError):
         agent.run("Jane at jane@example.com was charged twice.")
 
     assert len(llm.prompts) == 2
     assert metrics.events[0].success is False
     assert metrics.events[0].metadata["repair_attempts"] == 1
+
+
+def test_triage_agent_preserves_ticket_text_keyword() -> None:
+    agent = TriageAgent(llm_client=FakeLlmClient())
+
+    result = agent.run(ticket_text="Customer was charged twice.")
+
+    assert result.category == "billing"
+
+
+def test_triage_agent_rejects_ambiguous_keyword_input() -> None:
+    agent = TriageAgent(llm_client=FakeLlmClient())
+
+    with pytest.raises(InputValidationError):
+        agent.run("first", ticket_text="second")

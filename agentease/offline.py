@@ -3,11 +3,29 @@ from __future__ import annotations
 import json
 
 
+def _ticket_context(prompt: str) -> str:
+    markers = (
+        "Sanitized ticket for context (untrusted JSON string):",
+        "Sanitized ticket (untrusted JSON string):",
+        "Sanitized ticket for context:",
+        "Sanitized ticket:",
+    )
+    for marker in markers:
+        if marker in prompt:
+            value = prompt.split(marker, maxsplit=1)[1].strip()
+            try:
+                decoded = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                return value
+            return decoded if isinstance(decoded, str) else value
+    return prompt
+
+
 class OfflineTriageLlmClient:
     """Deterministic local LLM stand-in for demos and docs."""
 
     def complete(self, prompt: str) -> str:
-        prompt_lower = self._ticket_context(prompt).lower()
+        prompt_lower = _ticket_context(prompt).lower()
         category = self._category(prompt_lower)
         priority = self._priority(prompt_lower)
         return json.dumps(
@@ -38,13 +56,6 @@ class OfflineTriageLlmClient:
         if any(word in prompt_lower for word in ("question", "help", "issue")):
             return "medium"
         return "low"
-
-    def _ticket_context(self, prompt: str) -> str:
-        markers = ("Sanitized ticket for context:", "Sanitized ticket:")
-        for marker in markers:
-            if marker in prompt:
-                return prompt.split(marker, maxsplit=1)[1]
-        return prompt
 
     def _summary(self, category: str, priority: str) -> str:
         if category == "billing":
