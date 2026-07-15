@@ -51,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Raised the minimum LiteLLM and Click versions and refreshed transitive locks
+  to patched aiohttp and idna releases, resolving the dependency advisories
+  found during the public-repository security audit.
 - Removed the third-party PR Agent workflow because its pinned action revision
   still launched a mutable container image while receiving repository and
   provider credentials.
