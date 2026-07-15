@@ -305,6 +305,9 @@ The following are roadmap items, not current features:
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete contribution and
+security-reporting workflow.
+
 ```bash
 uv run ruff format --check .
 uv run ruff check .

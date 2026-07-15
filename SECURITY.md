@@ -12,9 +12,10 @@ production release.
 Please do not disclose a suspected vulnerability in a public issue, discussion,
 or pull request.
 
-Use the repository's private vulnerability-reporting option under the GitHub
-Security tab when it is available. If that option is unavailable, email the
-maintainer at `newmanevan@myyahoo.com` with:
+Use the repository's
+[private vulnerability-reporting form](https://github.com/ejames-dev/agentease/security/advisories/new).
+If GitHub's private reporting service is unavailable, email the maintainer at
+`newmanevan@myyahoo.com` with:
 
 - the affected version and configuration
 - a minimal reproduction or proof of concept
