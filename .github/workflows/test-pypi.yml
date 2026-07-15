@@ -1,0 +1,179 @@
+name: Stage package on TestPyPI
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: testpypi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and attest distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout the selected revision
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: "0.11.28"
+          enable-cache: false
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Build wheel and source distribution once
+        run: uv build --python 3.13 --no-sources --clear --no-create-gitignore
+
+      - name: Validate distribution metadata
+        run: uvx --from 'twine==6.2.0' twine check --strict dist/*
+
+      - name: Verify artifact set
+        shell: bash
+        run: |
+          shopt -s nullglob
+          wheels=(dist/*.whl)
+          sdists=(dist/*.tar.gz)
+          if (( ${#wheels[@]} != 1 || ${#sdists[@]} != 1 )); then
+            echo "Expected exactly one wheel and one source distribution." >&2
+            exit 1
+          fi
+          (cd dist && sha256sum * > ../SHA256SUMS)
+
+      - name: Attest distribution provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: dist/*
+
+      - name: Upload the exact staging bundle
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: testpypi-distributions
+          path: |
+            dist/
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  publish:
+    name: Publish exact bundle to TestPyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # This repository has one maintainer, so the environment requires approval
+    # from ejames-dev while allowing self-review. Configure the matching
+    # TestPyPI Trusted Publisher before first use.
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/agentease
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download the attested staging bundle
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: testpypi-distributions
+          path: release-bundle
+
+      - name: Verify downloaded checksums
+        working-directory: release-bundle/dist
+        run: sha256sum --check ../SHA256SUMS
+
+      - name: Publish with TestPyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0 # v1.9.0
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: release-bundle/dist
+          verify-metadata: true
+          skip-existing: false
+          print-hash: true
+
+  verify:
+    name: Install the staged package
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download the staged bundle metadata
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: testpypi-distributions
+          path: release-bundle
+
+      - name: Read the staged package version
+        id: package
+        shell: bash
+        run: |
+          VERSION=$(python - <<'PY'
+          import email
+          import pathlib
+          import zipfile
+
+          wheel = next(pathlib.Path("release-bundle/dist").glob("*.whl"))
+          with zipfile.ZipFile(wheel) as archive:
+              metadata_name = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
+              metadata = email.message_from_bytes(archive.read(metadata_name))
+          print(metadata["Version"])
+          PY
+          )
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: "0.11.28"
+          enable-cache: false
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install from TestPyPI
+        env:
+          PACKAGE_VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          uv venv --python 3.13 --seed .testpypi-smoke
+          .testpypi-smoke/bin/python -m pip install release-bundle/dist/*.whl
+          .testpypi-smoke/bin/python -m pip uninstall --yes agentease
+          for attempt in 1 2 3 4 5; do
+            if .testpypi-smoke/bin/python -m pip install \
+              --no-cache-dir \
+              --no-deps \
+              --index-url https://test.pypi.org/simple/ \
+              "agentease==$PACKAGE_VERSION"; then
+              break
+            fi
+            if [[ "$attempt" == "5" ]]; then
+              exit 1
+            fi
+            sleep 15
+          done
+          .testpypi-smoke/bin/python -m pip check
+
+      - name: Run all staged offline workflows
+        run: |
+          .testpypi-smoke/bin/python -I - <<'PY'
+          from agentease import AgentEase
+
+          client = AgentEase.offline()
+          assert client.triage.run("Customer was charged twice.").category == "billing"
+          assert client.lead_qualification.run("Enterprise buyer wants a demo.").intent == "hot"
+          assert client.document_classification.run("Internal policy.").doc_type == "policy"
+          print("TestPyPI package passed all offline workflow smokes")
+          PY

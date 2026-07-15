@@ -6,22 +6,30 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agentease.templates.base import WorkflowAgent, WorkflowSpec
 
-__all__ = ["DOC_SPEC", "DocClassificationAgent", "DocClassificationResult"]
+__all__ = [
+    "DOC_SPEC",
+    "DocClassificationAgent",
+    "DocClassificationResult",
+    "DocumentClassificationResult",
+]
 
 
-class DocClassificationResult(BaseModel):
+class DocumentClassificationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     doc_type: Literal["contract", "invoice", "policy", "report", "correspondence", "other"]
     sensitivity: Literal["public", "internal", "confidential", "restricted"]
-    contains_pii: bool
     summary: str = Field(min_length=1)
     recommended_handling: str = Field(min_length=1)
 
 
-DOC_SPEC: WorkflowSpec[DocClassificationResult] = WorkflowSpec(
+# Compatibility alias retained through the 0.3 release line.
+DocClassificationResult = DocumentClassificationResult
+
+
+DOC_SPEC: WorkflowSpec[DocumentClassificationResult] = WorkflowSpec(
     name="doc_classification",
-    schema=DocClassificationResult,
+    schema=DocumentClassificationResult,
     instruction=(
         "You are an internal document governance agent.\n"
         "Classify the sanitized document and assess its data sensitivity."
@@ -30,7 +38,7 @@ DOC_SPEC: WorkflowSpec[DocClassificationResult] = WorkflowSpec(
 )
 
 
-class DocClassificationAgent(WorkflowAgent[DocClassificationResult]):
+class DocClassificationAgent(WorkflowAgent[DocumentClassificationResult]):
     """Internal document classification workflow (a thin specialization of WorkflowAgent)."""
 
     def __init__(self, **kwargs: object) -> None:

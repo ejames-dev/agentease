@@ -6,7 +6,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Re-exported here so existing imports keep working
 # (`from agentease.templates.triage_agent import LlmClient, LiteLlmClient`).
-from agentease.templates.base import LiteLlmClient, LlmClient, WorkflowAgent, WorkflowSpec
+from agentease.exceptions import InputValidationError
+from agentease.templates.base import (
+    LiteLlmClient,
+    LlmClient,
+    WorkflowAgent,
+    WorkflowRun,
+    WorkflowSpec,
+)
 
 __all__ = ["LiteLlmClient", "LlmClient", "TRIAGE_SPEC", "TriageAgent", "TriageResult"]
 
@@ -36,3 +43,28 @@ class TriageAgent(WorkflowAgent[TriageResult]):
 
     def __init__(self, **kwargs: object) -> None:
         super().__init__(TRIAGE_SPEC, **kwargs)  # type: ignore[arg-type]
+
+    def run(
+        self,
+        text: str | None = None,
+        *,
+        ticket_text: str | None = None,
+    ) -> TriageResult:
+        return super().run(self._resolve_ticket_text(text, ticket_text))
+
+    def run_with_report(
+        self,
+        text: str | None = None,
+        *,
+        ticket_text: str | None = None,
+    ) -> WorkflowRun[TriageResult]:
+        return super().run_with_report(self._resolve_ticket_text(text, ticket_text))
+
+    def _resolve_ticket_text(self, text: str | None, ticket_text: str | None) -> str:
+        if text is not None and ticket_text is not None:
+            raise InputValidationError("Pass either text or ticket_text, not both.")
+        if ticket_text is not None:
+            return ticket_text
+        if text is not None:
+            return text
+        raise InputValidationError("Workflow input must be a non-blank string.")
