@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-07-16
 
 ### Added
 
@@ -51,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Updated the pinned PyPI Trusted Publishing action from 1.9.0 to 1.14.0,
+  resolving its upstream expression-injection advisory before the first public
+  package publication.
 - Raised the minimum LiteLLM and Click versions and refreshed transitive locks
   to patched aiohttp and idna releases, resolving the dependency advisories
   found during the public-repository security audit.
@@ -91,6 +94,6 @@ that keeps raw ticket text and sensitive values inside the customer's environmen
 - Support triage and JSONL batch triage examples.
 - Unit tests and GitHub Actions CI (format, lint, tests on Python 3.11 and 3.12).
 
-[0.2.0]: https://github.com/ejames-dev/agentease/compare/v0.1.1...HEAD
+[0.2.0]: https://github.com/ejames-dev/agentease/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/ejames-dev/agentease/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ejames-dev/agentease/releases/tag/v0.1.0
