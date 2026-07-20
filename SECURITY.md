@@ -3,9 +3,8 @@
 ## Supported Versions
 
 AgentEase is pre-1.0 software. Security fixes are applied to the latest released
-minor version; older minor versions may not receive fixes. The unreleased 0.2.0
-code is under active development and should not be treated as a supported
-production release.
+minor version; older minor versions may not receive fixes. The 0.2.x release
+line is the currently supported production release.
 
 ## Reporting a Vulnerability
 
