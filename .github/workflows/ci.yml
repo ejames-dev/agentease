@@ -43,13 +43,13 @@ jobs:
         run: uv sync --locked --dev --python ${{ matrix.python-version }}
 
       - name: Check formatting
-        run: uv run --frozen ruff format --check .
+        run: uv run --frozen --python ${{ matrix.python-version }} ruff format --check .
 
       - name: Lint
-        run: uv run --frozen ruff check .
+        run: uv run --frozen --python ${{ matrix.python-version }} ruff check .
 
       - name: Run tests
-        run: uv run --frozen pytest
+        run: uv run --frozen --python ${{ matrix.python-version }} pytest
 
   package:
     name: Build and inspect distributions
