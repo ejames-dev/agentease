@@ -35,12 +35,16 @@ def test_agentease_offline_runs_lead_and_doc_workflows(monkeypatch) -> None:
 
     client = AgentEase.offline()
 
-    lead = client.leads.run("Acme Corp wants a demo for 1000 seats, budget approved.")
-    doc = client.docs.run("Master services agreement with jane@example.com, net-30 terms.")
+    lead = client.lead_qualification.run("Acme Corp wants a demo for 1000 seats, budget approved.")
+    doc_run = client.document_classification.run_with_report(
+        "Master services agreement with jane@example.com, net-30 terms."
+    )
 
     assert lead.next_action == "book_demo"
-    assert doc.doc_type == "contract"
-    assert doc.contains_pii is True
+    assert doc_run.output.doc_type == "contract"
+    assert doc_run.guardrails.detected_pii_types == ("email",)
+    assert client.leads is client.lead_qualification
+    assert client.docs is client.document_classification
     names = {event.name for event in client.metrics.events}
     assert {"lead_qualification.run", "doc_classification.run"} <= names
 

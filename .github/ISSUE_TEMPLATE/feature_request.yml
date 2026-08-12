@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a focused improvement to AgentEase
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem before proposing an API. Please search existing
+        issues and the documented roadmap before submitting the request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Who needs this, and what can they not do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest useful solution and any API implications.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe workarounds or other designs you considered.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and pull requests for similar requests.
+          required: true
+        - label: This request does not contain secrets or real customer data.
+          required: true

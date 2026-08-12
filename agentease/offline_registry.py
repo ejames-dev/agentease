@@ -9,9 +9,14 @@ from agentease.templates.base import LlmClient
 def _context(prompt: str, labels: tuple[str, ...]) -> str:
     """Return the sanitized text that follows the first matching prompt label."""
     for label in labels:
-        marker = f"{label}:"
-        if marker in prompt:
-            return prompt.split(marker, maxsplit=1)[1]
+        for marker in (f"{label} (untrusted JSON string):", f"{label}:"):
+            if marker in prompt:
+                value = prompt.split(marker, maxsplit=1)[1].strip()
+                try:
+                    decoded = json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    return value
+                return decoded if isinstance(decoded, str) else value
     return prompt
 
 
@@ -81,7 +86,6 @@ class OfflineDocClassificationLlmClient:
             {
                 "doc_type": self._doc_type(text),
                 "sensitivity": self._sensitivity(text),
-                "contains_pii": "[redacted_" in text,
                 "summary": "Document classified and assessed for data sensitivity.",
                 "recommended_handling": self._handling(text),
             }
