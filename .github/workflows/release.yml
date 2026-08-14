@@ -48,7 +48,7 @@ jobs:
         run: uv build --python 3.13 --no-sources --clear --no-create-gitignore
 
       - name: Validate distribution metadata
-        run: uvx --from 'twine==6.2.0' twine check --strict dist/*
+        run: uvx --from 'twine==7.0.0' twine check --strict dist/*
 
       - name: Verify tag, artifact set, and checksums
         shell: bash
