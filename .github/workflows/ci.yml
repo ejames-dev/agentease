@@ -43,13 +43,13 @@ jobs:
         run: uv sync --locked --dev --python ${{ matrix.python-version }}
 
       - name: Check formatting
-        run: uv run --frozen ruff format --check .
+        run: uv run --frozen --python ${{ matrix.python-version }} ruff format --check .
 
       - name: Lint
-        run: uv run --frozen ruff check .
+        run: uv run --frozen --python ${{ matrix.python-version }} ruff check .
 
       - name: Run tests
-        run: uv run --frozen pytest
+        run: uv run --frozen --python ${{ matrix.python-version }} pytest
 
   package:
     name: Build and inspect distributions
@@ -83,7 +83,7 @@ jobs:
         run: uv build --python 3.13 --no-sources --clear --no-create-gitignore
 
       - name: Validate distribution metadata
-        run: uvx --from 'twine==6.2.0' twine check --strict dist/*
+        run: uvx --from 'twine==7.0.0' twine check --strict dist/*
 
       - name: Smoke-test the wheel in an isolated environment
         shell: bash
