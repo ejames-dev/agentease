@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.3.3",
-    "litellm>=1.92.0",
+    "litellm>=1.96.2",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
 ]
@@ -35,7 +35,7 @@ Issues = "https://github.com/ejames-dev/agentease/issues"
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
-    "ruff>=0.15.21",
+    "ruff>=0.16.3",
 ]
 
 [tool.pytest.ini_options]
