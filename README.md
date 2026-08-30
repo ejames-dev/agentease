@@ -131,6 +131,18 @@ The default recorder keeps metric events only in the current process. AgentEase
 0.2.0 has no hosted telemetry path and does not send metrics to AgentEase
 servers.
 
+### Optional: error reporting via Sentry
+
+AgentEase never initializes a Sentry client and never ships a DSN. Install the
+`sentry` extra (`pip install agentease[sentry]`) and, in your own application,
+call `sentry_sdk.init(dsn=...)` with a DSN you control. Once your process has
+an active Sentry client, AgentEase forwards provider and workflow-pipeline
+exceptions to it via `sentry_sdk.capture_exception()`; guardrail reports and
+raw workflow input are never included. With the extra not installed, or no
+host-side `sentry_sdk.init(...)` call, this is a no-op — nothing is sent
+anywhere, and the statement above still holds: AgentEase itself has no
+hosted telemetry path.
+
 ## Template Contracts
 
 ### Support triage

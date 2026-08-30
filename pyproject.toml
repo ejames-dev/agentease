@@ -27,6 +27,9 @@ dependencies = [
     "python-dotenv>=1.2.2",
 ]
 
+[project.optional-dependencies]
+sentry = ["sentry-sdk>=2.0.0"]
+
 [project.urls]
 Homepage = "https://github.com/ejames-dev/agentease"
 Repository = "https://github.com/ejames-dev/agentease"
