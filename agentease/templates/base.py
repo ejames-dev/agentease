@@ -22,6 +22,7 @@ from agentease.telemetry.metrics import (
     now_ms,
     record_non_blocking,
 )
+from agentease.telemetry.sentry import capture_exception
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
@@ -140,6 +141,7 @@ class WorkflowAgent(Generic[SchemaT]):
         try:
             scrub_result = self.pii_scrubber.scrub(text)
         except Exception as error:
+            capture_exception(error)
             raise AgentEaseError("The workflow guardrail pipeline failed.") from error
         repair_attempts = 0
 
@@ -167,7 +169,8 @@ class WorkflowAgent(Generic[SchemaT]):
                 output=result,
                 guardrails=self._report(scrub_result, repair_attempts),
             )
-        except (ProviderError, OutputValidationError):
+        except (ProviderError, OutputValidationError) as error:
+            capture_exception(error)
             self._record(started, False, scrub_result, repair_attempts)
             raise
 
