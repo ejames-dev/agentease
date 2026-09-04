@@ -141,7 +141,8 @@ exceptions to it via `sentry_sdk.capture_exception()`; guardrail reports and
 raw workflow input are never included. With the extra not installed, or no
 host-side `sentry_sdk.init(...)` call, this is a no-op — nothing is sent
 anywhere, and the statement above still holds: AgentEase itself has no
-hosted telemetry path.
+hosted telemetry path. See `examples/sentry_integration.py` for a runnable
+host-app wiring example.
 
 ## Template Contracts
 
