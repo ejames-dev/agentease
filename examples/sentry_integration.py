@@ -30,7 +30,10 @@ def main() -> None:
     if dsn:
         import sentry_sdk
 
-        sentry_sdk.init(dsn=dsn, send_default_pii=True)
+        # include_local_variables=False: sentry-sdk captures local stack-frame
+        # variables by default, which would send raw (unscrubbed) workflow input
+        # alongside AgentEase's own privacy guarantees.
+        sentry_sdk.init(dsn=dsn, send_default_pii=True, include_local_variables=False)
 
     client = AgentEase.from_env() if args.live else AgentEase.offline()
 
