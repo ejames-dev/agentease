@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from bisect import bisect_right
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
 Validator = Callable[[str], bool]
@@ -29,6 +30,15 @@ class EntityPattern:
     validator: Validator | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _CandidateSpan:
+    start: int
+    end: int
+    priority: int
+    kind: str
+    value: str
+
+
 class PiiScrubber:
     """Local regex-based PII scrubber for the MVP.
 
@@ -39,7 +49,7 @@ class PiiScrubber:
     DEFAULT_PATTERNS: dict[str, str] = {
         "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
         "phone": r"(?<!\d)(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?!\d)",
-        "credit_card": r"(?<!\d)(?:\d[ -]*?){13,19}(?!\d)",
+        "credit_card": r"(?<!\d)(?:\d(?: ?\d){12,18}|\d(?:-?\d){12,18})(?!\d)",
         "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
     }
 
@@ -68,9 +78,11 @@ class PiiScrubber:
             )
 
         for kind, values in (custom_entities or {}).items():
-            escaped_values = [re.escape(value) for value in values if value]
-            if not escaped_values:
+            unique_values = list(dict.fromkeys(value for value in values if value))
+            if not unique_values:
                 continue
+            sorted_values = sorted(unique_values, key=len, reverse=True)
+            escaped_values = [re.escape(value) for value in sorted_values]
             patterns.append(
                 EntityPattern(
                     kind=kind,
@@ -81,32 +93,138 @@ class PiiScrubber:
         self._patterns = patterns
 
     def scrub(self, text: str) -> ScrubResult:
-        sanitized = text
+        candidates: list[_CandidateSpan] = []
+        for priority, entity_pattern in enumerate(self._patterns):
+            candidates.extend(_iter_candidates(entity_pattern, priority, text))
+
+        selected = _resolve_non_overlapping(candidates)
+        if not selected:
+            return ScrubResult(
+                original_text=text,
+                sanitized_text=text,
+                replacements={},
+            )
+
+        chunks: list[str] = []
         replacements: dict[str, list[str]] = {}
-
-        for entity_pattern in self._patterns:
-            seen: list[str] = []
-
-            def replace(
-                match: re.Match[str],
-                entity_pattern: EntityPattern = entity_pattern,
-                seen: list[str] = seen,
-            ) -> str:
-                value = match.group(0)
-                if entity_pattern.validator and not entity_pattern.validator(value):
-                    return value
-                seen.append(value)
-                return self.redaction_format.format(kind=entity_pattern.kind.upper())
-
-            sanitized = entity_pattern.pattern.sub(replace, sanitized)
-            if seen:
-                replacements.setdefault(entity_pattern.kind, []).extend(seen)
+        cursor = 0
+        for span in selected:
+            chunks.append(text[cursor : span.start])
+            chunks.append(self.redaction_format.format(kind=span.kind.upper()))
+            replacements.setdefault(span.kind, []).append(span.value)
+            cursor = span.end
+        chunks.append(text[cursor:])
 
         return ScrubResult(
             original_text=text,
-            sanitized_text=sanitized,
+            sanitized_text="".join(chunks),
             replacements=replacements,
         )
+
+
+def _iter_candidates(
+    entity_pattern: EntityPattern,
+    priority: int,
+    text: str,
+) -> Iterator[_CandidateSpan]:
+    validator = entity_pattern.validator
+    if validator is None:
+        for match in entity_pattern.pattern.finditer(text):
+            start, end = match.start(), match.end()
+            if start < end:
+                yield _CandidateSpan(start, end, priority, entity_pattern.kind, match.group(0))
+        return
+
+    length = len(text)
+    pos = 0
+    while pos < length:
+        match = entity_pattern.pattern.search(text, pos)
+        if match is None:
+            break
+        start, end = match.start(), match.end()
+        if start == end:
+            pos = start + 1
+            continue
+
+        # Validator-backed patterns (such as Luhn credit-card checks) can greedily
+        # absorb adjacent digit groups and fail validation as a whole while still
+        # containing a valid sub-span on separator boundaries.
+        probe_end = end
+        while probe_end > start:
+            sub = (
+                match if probe_end == end else entity_pattern.pattern.match(text, start, probe_end)
+            )
+            if (
+                sub is not None
+                and sub.end() == probe_end
+                and (probe_end == end or not text[probe_end].isalnum())
+            ):
+                candidate = sub.group(0)
+                if validator(candidate):
+                    yield _CandidateSpan(
+                        start,
+                        probe_end,
+                        priority,
+                        entity_pattern.kind,
+                        candidate,
+                    )
+
+            cursor = probe_end - 1
+            while cursor > start and text[cursor].isalnum():
+                cursor -= 1
+            while cursor > start and not text[cursor - 1].isalnum():
+                cursor -= 1
+            probe_end = cursor
+
+        next_pos = start + 1
+        while next_pos < end and text[next_pos].isalnum():
+            next_pos += 1
+        while next_pos < end and not text[next_pos].isalnum():
+            next_pos += 1
+        pos = next_pos
+
+
+def _resolve_non_overlapping(candidates: list[_CandidateSpan]) -> list[_CandidateSpan]:
+    if not candidates:
+        return []
+
+    ordered = sorted(candidates, key=lambda c: (c.end, c.start, c.priority))
+    ends = [c.end for c in ordered]
+    count = len(ordered)
+
+    # Maximize total redacted characters; break ties toward fewer split spans,
+    # earlier pattern registration order, and leftmost start index.
+    dp_score: list[tuple[int, int, int, int]] = [(0, 0, 0, 0)] * (count + 1)
+    take: list[bool] = [False] * count
+    prev_idx: list[int] = [0] * count
+
+    for index, cand in enumerate(ordered):
+        compatible = bisect_right(ends, cand.start, 0, index)
+        base = dp_score[compatible]
+        with_cand = (
+            base[0] + (cand.end - cand.start),
+            base[1] - 1,
+            base[2] - cand.priority,
+            base[3] - cand.start,
+        )
+        if with_cand > dp_score[index]:
+            dp_score[index + 1] = with_cand
+            take[index] = True
+            prev_idx[index] = compatible
+        else:
+            dp_score[index + 1] = dp_score[index]
+
+    selected: list[_CandidateSpan] = []
+    cursor = count
+    while cursor > 0:
+        if take[cursor - 1]:
+            selected.append(ordered[cursor - 1])
+            cursor = prev_idx[cursor - 1]
+        else:
+            cursor -= 1
+
+    selected.reverse()
+    return selected
 
 
 def _is_luhn_valid(value: str) -> bool:

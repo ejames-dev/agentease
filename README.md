@@ -197,7 +197,7 @@ default and covers only these forms:
 | --- | --- | --- |
 | Email | ASCII-style local part, `@`, domain, and alphabetic TLD of at least two characters | Not a full RFC email parser; internationalized addresses and unusual valid forms can be missed |
 | Phone | 10-digit North American numbers with optional `+1`/`1`, parentheses, spaces, dots, or hyphens | Does not cover general international numbers, extensions, short codes, or words such as `555-FLOWERS` |
-| Credit card | 13-19 digits separated by optional spaces or hyphens | Must pass a Luhn check; other payment/account identifiers are not covered |
+| Credit card | 13-19 digits separated by optional single spaces or single hyphens | Must pass a Luhn check; mixed separators and other payment/account identifiers are not covered |
 | SSN-like value | Exactly `NNN-NN-NNNN` | Format match only; unhyphenated values are missed and issuance validity is not checked |
 
 These are the built-in expressions:
@@ -205,7 +205,7 @@ These are the built-in expressions:
 ```text
 email       \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b
 phone       (?<!\d)(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?!\d)
-credit_card (?<!\d)(?:\d[ -]*?){13,19}(?!\d)
+credit_card (?<!\d)(?:\d(?: ?\d){12,18}|\d(?:-?\d){12,18})(?!\d)
 ssn         \b\d{3}-\d{2}-\d{4}\b
 ```
 
