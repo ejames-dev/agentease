@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Fixed `PiiScrubber` credit-card boundary matching so Luhn-valid card numbers
+  adjacent to item numbers, dates, or other digits are no longer skipped.
+- Replaced sequential `PiiScrubber` regex passes with single-pass,
+  maximum-coverage span resolution on the original text, preventing partial
+  card-prefix leaks through `phone` matches, prefix shadowing in
+  `custom_entities`, and custom-pattern corruption of redaction markers.
 - Restricted the `@claude` GitHub Actions workflow to non-bot actors with
   `OWNER`, `MEMBER`, or `COLLABORATOR` repository association before runner
   allocation, enforced default empty workflow permissions and job timeouts,
