@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   application has already initialized. AgentEase never initializes its own
   client or ships a DSN; with the extra absent this is a no-op.
 
+### Security
+
+- Restricted the `@claude` GitHub Actions workflow to non-bot actors with
+  `OWNER`, `MEMBER`, or `COLLABORATOR` repository association before runner
+  allocation, enforced default empty workflow permissions and job timeouts,
+  disabled persisted checkout credentials (`actions/checkout` v6), and excluded
+  bot-authored comments from prompt context.
+
 ## [0.2.0] - 2026-07-16
 
 ### Added
